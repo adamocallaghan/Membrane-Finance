@@ -1,0 +1,41 @@
+    function sendString(uint32 _dstEid, string memory _message, bytes calldata _options)
+        external
+        payable
+        returns (MessagingReceipt memory receipt)
+    {
+        bytes memory _payload = abi.encode(_message);
+        receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
+    function sendUint(uint32 _dstEid, uint256 _amount, bytes calldata _options)
+        external
+        payable
+        returns (MessagingReceipt memory receipt)
+    {
+        bytes memory _payload = abi.encode(_amount);
+        receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
+    function sendBoth(uint32 _dstEid, string memory _message, uint256 _amount, bytes calldata _options)
+        external
+        payable
+        returns (MessagingReceipt memory receipt)
+    {
+        bytes memory _payload = abi.encode(_message, _amount);
+        receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
+
+    ####### makefile stuff for above #######
+
+    # Send String from Base => Optimism
+send-string-from-base:
+	cast send $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "sendString(uint32, string, bytes)" $(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID) "Hello" $(MESSAGE_OPTIONS_BYTES) --value 0.01ether --account deployer
+
+# Send Uint from Base => Optimism
+send-uint-from-base:
+	cast send $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "sendUint(uint32, uint, bytes)" $(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID) 1234 $(MESSAGE_OPTIONS_BYTES) --value 0.01ether --account deployer
+
+# Send both String & Uint from Base => Optimism
+send-both-from-base:
+	cast send $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "sendBoth(uint32, string, uint, bytes)" $(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID) "Goodbye" 4321 $(MESSAGE_OPTIONS_BYTES) --value 0.01ether --account deployer
