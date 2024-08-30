@@ -6,8 +6,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OApp, MessagingFee, Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import {MessagingReceipt} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
 
-contract MyOApp is OApp {
-    constructor(address _endpoint, address _delegate) OApp(_endpoint, _delegate) Ownable(_delegate) {}
+contract StableEngine is OApp {
+    constructor(address _endpoint) OApp(_endpoint, msg.sender) Ownable(msg.sender) {}
 
     string public data = "Nothing received yet.";
 
