@@ -243,7 +243,7 @@ contract StableEngine is OApp, IERC721Receiver {
 
     function _lzReceive(
         Origin calldata, /*_origin*/
-        bytes32, /*_guid*/
+        bytes32 _guid,
         bytes calldata payload,
         address, /*_executor*/
         bytes calldata /*_extraData*/
@@ -251,8 +251,8 @@ contract StableEngine is OApp, IERC721Receiver {
         (uint256 amount, address recipient) = abi.decode(payload, (uint256, address));
         number = amount;
         user = recipient;
-        callStableEngineContractAndMint(recipient, amount);
-        // emit Received();
+
+        endpoint.sendCompose(stableCoinContract, _guid, 0, payload);
     }
 
     function callStableEngineContractAndMint(address _recipient, uint256 _numberOfCoins) internal {

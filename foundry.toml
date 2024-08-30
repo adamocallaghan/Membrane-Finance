@@ -12,4 +12,8 @@ remappings  = [
     "solidity-bytes-utils/=lib/solidity-bytes-utils/"
 ]
 
+[rpc_endpoints]
+base = "${BASE_SEPOLIA_RPC}"
+optimism = "${OPTIMISM_SEPOLIA_RPC}"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
