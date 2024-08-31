@@ -22,7 +22,7 @@ set-stablecoin-on-stableengine-optimism:
 
 # Send both Uint & Address from Base => Optimism
 send-useful-data-from-base:
-	cast send $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "sendToMinter(uint32, uint, address, bytes)" $(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID) 9911 $(DEPLOYER_PUBLIC_ADDRESS) $(MESSAGE_OPTIONS_BYTES) --value 0.1ether --account deployer
+	cast send $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "sendToMinter(uint32, uint, address, bytes)" $(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID) 888000000000000000000 $(DEPLOYER_PUBLIC_ADDRESS) $(MESSAGE_OPTIONS_BYTES) --value 0.1ether --account deployer
 
 # READ MESSSAGE ON OP
 

@@ -32,6 +32,9 @@ contract StableEngine is OApp, IERC721Receiver {
     mapping(address supplier => uint256 nftSupplied) public numberOfNftsUserHasSupplied;
     mapping(address user => uint256 stablecoinsMinted) public userAddressToNumberOfStablecoinsMinted;
 
+    mapping(address user => mapping(address nftCollection => uint256[] tokenIds)) public
+        userAddressToNftCollectionTokenIds;
+
     // CR and Health Factor vars
     uint256 public COLLATERALISATION_RATIO = 5e17; // aka 50%
     uint256 public MIN_HEALTH_FACTOR = 1e18; // aka 1.0
@@ -97,6 +100,9 @@ contract StableEngine is OApp, IERC721Receiver {
 
         // we always liquidate at floor price, so just need to count how many of each collection they've supplied
         userAddressToNftCollectionSuppliedCount[msg.sender][_nftAddress]++;
+
+        // for our frontend to render the user's specific NFTs
+        userAddressToNftCollectionTokenIds[msg.sender][_nftAddress].push(_tokenId);
 
         numberOfNftsUserHasSupplied[msg.sender]++;
 
@@ -267,6 +273,14 @@ contract StableEngine is OApp, IERC721Receiver {
     function setNftAsCollateral(address _nftAddress, address _nftOracle, uint256 _index) external onlyOwner {
         whitelistedNFTs.push(_nftAddress);
         nftOracles.push(_nftOracle);
+    }
+
+    function getUserTokenIdsForAnNftCollection(address _holder, address nftCollection)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        return userAddressToNftCollectionTokenIds[user][nftCollection];
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
