@@ -24,6 +24,8 @@ contract DeployToBase is Script {
         uint32 OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID = uint32(opLzEndIdUint);
         bytes32 OPTIMISM_SEPOLIA_OAPP_BYTES32 = "OPTIMISM_SEPOLIA_OAPP_BYTES32";
 
+        string memory DEPLOYER_PUBLIC_ADDRESS = "DEPLOYER_PUBLIC_ADDRESS";
+
         // ========================
         // === BASE DEPLOYMENTS ===
         // ========================
@@ -37,20 +39,29 @@ contract DeployToBase is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // deploy StableEngine OAPP contract
-        StableEngine baseOapp = new StableEngine(vm.envAddress(BASE_LZ_ENDPOINT));
+        StableEngine baseOapp =
+            new StableEngine{salt: "ghi"}(vm.envAddress(BASE_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(baseOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin baseOft =
-            new StableCoin("Membrane USD", "memUSD", vm.envAddress(BASE_LZ_ENDPOINT), address(baseOapp));
+        StableCoin baseOft = new StableCoin{salt: "ghi"}(
+            "Membrane USD",
+            "memUSD",
+            vm.envAddress(BASE_LZ_ENDPOINT),
+            address(baseOapp),
+            vm.envAddress(DEPLOYER_PUBLIC_ADDRESS)
+        );
         console2.log("OFT Address: ", address(baseOft));
 
         // deploy NFTMock
-        NFTMock baseNft = new NFTMock();
+        NFTMock baseNft = new NFTMock{salt: "ghi"}();
         console2.log("NFT Address: ", address(baseNft));
 
         // whitelist the NFT on StableEngine
         baseOapp.setNftAsCollateral(address(baseNft), address(0x0), 0);
+
+        // set the StableCoin address on the StableEngine (so it can find it and mint)
+        baseOapp.setStableCoin(address(baseOft));
 
         // mint 10 NFTs to the deployer
         for (uint256 i = 0; i < 10; i++) {
@@ -58,17 +69,5 @@ contract DeployToBase is Script {
         }
 
         vm.stopBroadcast();
-
-        // ====================
-        // === BASE WIRE-UP ===
-        // ====================
-
-        // vm.createSelectFork("base");
-
-        // vm.startBroadcast(deployerPrivateKey);
-
-        // baseOapp.setPeer(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID, OPTIMISM_SEPOLIA_OAPP_BYTES32);
-
-        // vm.stopBroadcast();
     }
 }

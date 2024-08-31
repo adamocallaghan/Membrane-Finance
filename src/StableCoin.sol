@@ -12,10 +12,13 @@ contract StableCoin is OFT, ILayerZeroComposer {
 
     event Mint(address recipient, uint256 amount);
 
-    constructor(string memory oftName, string memory oftSymbol, address lzEndpoint, address _stableEngine)
-        OFT(oftName, oftSymbol, lzEndpoint, msg.sender)
-        Ownable(_stableEngine)
-    {
+    constructor(
+        string memory oftName,
+        string memory oftSymbol,
+        address lzEndpoint,
+        address _stableEngine,
+        address _owner
+    ) OFT(oftName, oftSymbol, lzEndpoint, _owner) Ownable(_stableEngine) {
         // _mint(msg.sender, 100 ether);
         stableEngine = _stableEngine;
     }

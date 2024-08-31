@@ -70,7 +70,7 @@ contract StableEngine is OApp, IERC721Receiver {
     event ArbitrumSelected();
     event Received();
 
-    constructor(address _endpoint) OApp(_endpoint, msg.sender) Ownable(msg.sender) {}
+    constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
 
     // ================================
     // === SUPPLY NFT AS COLLATERAL ===

@@ -39,11 +39,10 @@ read-balance-of-stables-on-optimism:
 # =========================
 # === SCRIPT DEPLOYMENT ===
 # =========================
-
-deploy-contracts-to-base-using-script-and-set-nft-as-collateral:
+deploy-contracts--to-base-and-set-addresses-for-collateral-and-stablecoin:
 	forge script script/DeployToBase.s.sol:DeployToBase --broadcast --verify --etherscan-api-key $(BASE_ETHERSCAN_API_KEY) --rpc-url $(BASE_SEPOLIA_RPC) --account deployer -vvvvv
 
-deploy-contracts-to-optimism-using-script-and-set-nft-as-collateral:
+deploy-contracts--to-optimism-and-set-addresses-for-collateral-and-stablecoin:
 	forge script script/DeployToOptimism.s.sol:DeployToOptimism --broadcast --verify --etherscan-api-key $(OPTIMISM_ETHERSCAN_API_KEY) --rpc-url $(OPTIMISM_SEPOLIA_RPC) --account deployer -vvvvv
 
 set-peer-on-both-using-script:
