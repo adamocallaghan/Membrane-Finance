@@ -40,11 +40,11 @@ contract DeployToBase is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine baseOapp =
-            new StableEngine{salt: "jkl"}(vm.envAddress(BASE_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "mno"}(vm.envAddress(BASE_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(baseOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin baseOft = new StableCoin{salt: "jkl"}(
+        StableCoin baseOft = new StableCoin{salt: "mno"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(BASE_LZ_ENDPOINT),
@@ -54,7 +54,7 @@ contract DeployToBase is Script {
         console2.log("OFT Address: ", address(baseOft));
 
         // deploy NFTMock
-        NFTMock baseNft = new NFTMock{salt: "jkl"}();
+        NFTMock baseNft = new NFTMock{salt: "mno"}();
         console2.log("NFT Address: ", address(baseNft));
 
         // whitelist the NFT on StableEngine

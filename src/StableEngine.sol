@@ -134,62 +134,6 @@ contract StableEngine is OApp, IERC721Receiver {
         }
     }
 
-    // =========================
-    // === MINT OMNI-STABLES ===
-    // =========================
-
-    function mintOnOptimism(
-        uint32 _dstEid,
-        string memory _message,
-        uint256 _numberToMint,
-        uint256 _selection,
-        address _recipient,
-        bytes calldata _options
-    ) external payable {
-        // has user supplied an nft as collateral
-        if (numberOfNftsUserHasSupplied[msg.sender] == 0) {
-            revert NoNftsCurrentlySupplied();
-        }
-
-        uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser();
-
-        if (_numberToMint <= maxStablecoinCanBeMinted) {
-            bytes memory _payload = abi.encode(_message, _numberToMint, _selection, _recipient); // Encode the message as bytes
-            _lzSend(
-                _dstEid,
-                _payload,
-                _options,
-                MessagingFee(msg.value, 0), // Fee for the message (nativeFee, lzTokenFee)
-                payable(msg.sender) // The refund address in case the send call reverts
-            );
-        }
-
-        userAddressToNumberOfStablecoinsMinted[msg.sender] += _numberToMint;
-    }
-
-    function _calculateMaxMintableByUser() internal returns (uint256) {
-        // @todo when other NFTs as collateral is being implemented...
-        // - it should loop over all the user's deposited NFTs (from each collection) and get the floor price for each
-        // - it should then calculate the value of their entire colllateral
-
-        // calculate amount of stables that user can mint against their entire collateral
-        uint256 totalValueOfAllCollateral = nftPriceInUsd() * numberOfNftsUserHasSupplied[msg.sender]; // @todo change to account of different collections and prices
-        uint256 availableToBorrowAtMaxCR = (totalValueOfAllCollateral * COLLATERALISATION_RATIO) / 1e18; // 50% of nft price
-        uint256 maxStablecoinCanBeMinted = availableToBorrowAtMaxCR - userAddressToNumberOfStablecoinsMinted[msg.sender];
-        return maxStablecoinCanBeMinted;
-    }
-
-    // ======================
-    // === NFT PRICE FEED ===
-    // ======================
-
-    function nftPriceInUsd() internal returns (uint256) {
-        IChainlinkDataFeed nftPriceFeed = IChainlinkDataFeed(nftOracles[0]);
-        uint256 nftPrice = uint256(nftPriceFeed.latestAnswer());
-        return nftPrice * 1e10; // bring it up as chainlink returns it with 8 decimals only
-            // return 36000e18;
-    }
-
     // ===============================
     // === LAYERZERO FUNCTIONALITY ===
     // ===============================
@@ -198,7 +142,7 @@ contract StableEngine is OApp, IERC721Receiver {
     // === LZ SEND ===
     // ===============
 
-    function send(uint32 _dstEid, string memory _message, uint256 _amount, bytes calldata _options)
+    function sendToMinter(uint32 _dstEid, uint256 _amount, address _recipient, bytes calldata _options)
         external
         payable
         returns (MessagingReceipt memory receipt)
@@ -211,23 +155,14 @@ contract StableEngine is OApp, IERC721Receiver {
         // calculate max amount user can mint
         uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser();
 
-        // check + send to destination chain
+        // check if acceptable amount
         if (_amount <= maxStablecoinCanBeMinted) {
-            bytes memory _payload = abi.encode(_message);
+            bytes memory _payload = abi.encode(_amount, _recipient);
             receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
         }
 
-        // increment user's stable balance
+        // update user balance
         userAddressToNumberOfStablecoinsMinted[msg.sender] += _amount;
-    }
-
-    function sendToMinter(uint32 _dstEid, uint256 _amount, address _recipient, bytes calldata _options)
-        external
-        payable
-        returns (MessagingReceipt memory receipt)
-    {
-        bytes memory _payload = abi.encode(_amount, _recipient);
-        receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
     }
 
     // ================
@@ -266,6 +201,37 @@ contract StableEngine is OApp, IERC721Receiver {
         emit MintContractCalled();
     }
 
+    // ==========================
+    // === CALCULATE MAX MINT ===
+    // ==========================
+
+    function _calculateMaxMintableByUser() internal returns (uint256) {
+        // @todo when other NFTs as collateral is being implemented...
+        // - it should loop over all the user's deposited NFTs (from each collection) and get the floor price for each
+        // - it should then calculate the value of their entire colllateral
+
+        // calculate amount of stables that user can mint against their entire collateral
+        uint256 totalValueOfAllCollateral = nftPriceInUsd() * numberOfNftsUserHasSupplied[msg.sender]; // @todo change to account of different collections and prices
+        uint256 availableToBorrowAtMaxCR = (totalValueOfAllCollateral * COLLATERALISATION_RATIO) / 1e18; // 50% of nft price
+        uint256 maxStablecoinCanBeMinted = availableToBorrowAtMaxCR - userAddressToNumberOfStablecoinsMinted[msg.sender];
+        return maxStablecoinCanBeMinted;
+    }
+
+    // ======================
+    // === NFT PRICE FEED ===
+    // ======================
+
+    function nftPriceInUsd() internal returns (uint256) {
+        // IChainlinkDataFeed nftPriceFeed = IChainlinkDataFeed(nftOracles[0]);
+        // uint256 nftPrice = uint256(nftPriceFeed.latestAnswer());
+        // return nftPrice * 1e10; // bring it up as chainlink returns it with 8 decimals only
+        return 36000e18;
+    }
+
+    // =========================
+    // === SETTERS & GETTERS ===
+    // =========================
+
     function setStableCoin(address _stableCoin) external onlyOwner {
         stableCoinContract = _stableCoin;
     }
@@ -280,8 +246,16 @@ contract StableEngine is OApp, IERC721Receiver {
         view
         returns (uint256[] memory)
     {
-        return userAddressToNftCollectionTokenIds[user][nftCollection];
+        return userAddressToNftCollectionTokenIds[_holder][nftCollection];
     }
+
+    function getMaxMintableByUser() external returns (uint256) {
+        return _calculateMaxMintableByUser();
+    }
+
+    // ============================
+    // === NFT RECEIVE REQUIRED ===
+    // ============================
 
     function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
         return this.onERC721Received.selector;
