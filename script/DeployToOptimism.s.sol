@@ -40,11 +40,11 @@ contract DeployToOptimism is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine optimismOapp =
-            new StableEngine{salt: "ghi"}(vm.envAddress(OPTIMISM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "jkl"}(vm.envAddress(OPTIMISM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(optimismOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin optimismOft = new StableCoin{salt: "ghi"}(
+        StableCoin optimismOft = new StableCoin{salt: "jkl"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(OPTIMISM_LZ_ENDPOINT),
@@ -54,7 +54,7 @@ contract DeployToOptimism is Script {
         console2.log("OFT Address: ", address(optimismOft));
 
         // deploy NFTMock
-        NFTMock optimismNft = new NFTMock{salt: "ghi"}();
+        NFTMock optimismNft = new NFTMock{salt: "jkl"}();
         console2.log("NFT Address: ", address(optimismNft));
 
         // whitelist the NFT on StableEngine
