@@ -153,7 +153,7 @@ contract StableEngine is OApp, IERC721Receiver {
         }
 
         // calculate max amount user can mint
-        uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser();
+        uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser(msg.sender);
 
         // check if acceptable amount
         if (_amount <= maxStablecoinCanBeMinted) {
@@ -205,23 +205,38 @@ contract StableEngine is OApp, IERC721Receiver {
     // === CALCULATE MAX MINT ===
     // ==========================
 
-    function _calculateMaxMintableByUser() internal returns (uint256) {
-        // @todo when other NFTs as collateral is being implemented...
-        // - it should loop over all the user's deposited NFTs (from each collection) and get the floor price for each
-        // - it should then calculate the value of their entire colllateral
-
+    function _calculateMaxMintableByUser(address _user) internal view returns (uint256) {
         // calculate amount of stables that user can mint against their entire collateral
-        uint256 totalValueOfAllCollateral = nftPriceInUsd() * numberOfNftsUserHasSupplied[msg.sender]; // @todo change to account of different collections and prices
+        uint256 totalValueOfAllCollateral = _calculateTotalValueOfUserCollateral(_user);
         uint256 availableToBorrowAtMaxCR = (totalValueOfAllCollateral * COLLATERALISATION_RATIO) / 1e18; // 50% of nft price
-        uint256 maxStablecoinCanBeMinted = availableToBorrowAtMaxCR - userAddressToNumberOfStablecoinsMinted[msg.sender];
+        uint256 maxStablecoinCanBeMinted = availableToBorrowAtMaxCR - userAddressToNumberOfStablecoinsMinted[_user];
         return maxStablecoinCanBeMinted;
     }
+
+    function _calculateTotalValueOfUserCollateral(address _user) internal view returns (uint256) {
+        uint256 totalValueOfAllCollateral = nftPriceInUsd() * numberOfNftsUserHasSupplied[_user];
+        return totalValueOfAllCollateral;
+    }
+
+    function _getBorrowerHealthFactor(address _borrower) internal view returns (uint256) {
+        // get borrower's borrowed tokens amount
+        uint256 borrowed = userAddressToNumberOfStablecoinsMinted[_borrower]; // e.g. 500e18
+
+        // get borower's collateral value
+        uint256 totalValueOfAllCollateral = _calculateTotalValueOfUserCollateral(_borrower); // e.g. 36000e18
+
+        // calculate health factor
+        uint256 healthFactor = (totalValueOfAllCollateral / borrowed) * COLLATERALISATION_RATIO;
+        return healthFactor;
+    }
+
+    function liquidate(address _borrower, uint256 _amountToRepay) external {}
 
     // ======================
     // === NFT PRICE FEED ===
     // ======================
 
-    function nftPriceInUsd() internal returns (uint256) {
+    function nftPriceInUsd() internal view returns (uint256) {
         // IChainlinkDataFeed nftPriceFeed = IChainlinkDataFeed(nftOracles[0]);
         // uint256 nftPrice = uint256(nftPriceFeed.latestAnswer());
         // return nftPrice * 1e10; // bring it up as chainlink returns it with 8 decimals only
@@ -249,8 +264,13 @@ contract StableEngine is OApp, IERC721Receiver {
         return userAddressToNftCollectionTokenIds[_holder][nftCollection];
     }
 
-    function getMaxMintableByUser() external returns (uint256) {
-        return _calculateMaxMintableByUser();
+    function getMaxMintableByUser(address _user) external view returns (uint256) {
+        // calculate amount of stables that user can mint against their entire collateral
+        return _calculateMaxMintableByUser(_user);
+    }
+
+    function getBorrowerHealthFactor(address _borrower) external view returns (uint256) {
+        return _getBorrowerHealthFactor(_borrower);
     }
 
     // ============================
