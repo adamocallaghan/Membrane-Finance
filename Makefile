@@ -47,3 +47,9 @@ deploy-contracts--to-optimism-and-set-addresses-for-collateral-and-stablecoin:
 
 set-peer-on-both-using-script:
 	forge script script/SetPeers.s.sol:SetPeers --broadcast --account deployer -vvvvv
+
+
+
+# read max mintable
+read-max-mintable-for-user:
+	cast call $(BASE_SEPOLIA_OAPP_ADDRESS) --rpc-url $(BASE_SEPOLIA_RPC) "getMaxMintableByUser(address)(uint)" $(DEPLOYER_PUBLIC_ADDRESS)

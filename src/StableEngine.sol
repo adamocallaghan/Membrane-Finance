@@ -240,7 +240,7 @@ contract StableEngine is OApp, IERC721Receiver {
         // IChainlinkDataFeed nftPriceFeed = IChainlinkDataFeed(nftOracles[0]);
         // uint256 nftPrice = uint256(nftPriceFeed.latestAnswer());
         // return nftPrice * 1e10; // bring it up as chainlink returns it with 8 decimals only
-        return 36000e18;
+        return 25000e18;
     }
 
     // =========================
