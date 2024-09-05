@@ -15,5 +15,9 @@ remappings  = [
 [rpc_endpoints]
 base = "${BASE_SEPOLIA_RPC}"
 optimism = "${OPTIMISM_SEPOLIA_RPC}"
+arbitrum = "${ARBITRUM_SEPOLIA_RPC}"
+zksync = "${ZKSYNC_SEPOLIA_RPC}"
+linea = "${LINEA_SEPOLIA_RPC}"
+ethereum = "${ETHEREUM_SEPOLIA_RPC}"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

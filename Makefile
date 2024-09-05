@@ -45,8 +45,22 @@ deploy-contracts--to-base-and-set-addresses-for-collateral-and-stablecoin:
 deploy-contracts--to-optimism-and-set-addresses-for-collateral-and-stablecoin:
 	forge script script/DeployToOptimism.s.sol:DeployToOptimism --broadcast --verify --etherscan-api-key $(OPTIMISM_ETHERSCAN_API_KEY) --rpc-url $(OPTIMISM_SEPOLIA_RPC) --account deployer -vvvvv
 
+deploy-contracts--to-arbitrum-and-set-addresses-for-collateral-and-stablecoin:
+	forge script script/DeployToArbitrum.s.sol:DeployToArbitrum --broadcast --verify --etherscan-api-key $(ARBITRUM_ETHERSCAN_API_KEY) --rpc-url $(ARBITRUM_SEPOLIA_RPC) --account deployer -vvvvv
+
+# ETHERSCAN API THROWING ERROR
+deploy-contracts--to-linea-and-set-addresses-for-collateral-and-stablecoin:
+	forge script script/DeployToLinea.s.sol:DeployToLinea --broadcast --rpc-url $(LINEA_SEPOLIA_RPC) --account deployer -vvvvv
+
+# GAS COSTS OFF THE WALL!
+# deploy-contracts--to-ethereum-and-set-addresses-for-collateral-and-stablecoin:
+# 	forge script script/DeployToEthereum.s.sol:DeployToEthereum --broadcast --verify --etherscan-api-key $(ETHEREUM_ETHERSCAN_API_KEY) --rpc-url $(ETHEREUM_SEPOLIA_RPC) --account deployer -vvvvv
+
+# deploy-contracts--to-zksync-and-set-addresses-for-collateral-and-stablecoin:
+# 	forge script script/DeployToZkSync.s.sol:DeployToZkSync --broadcast --verify --etherscan-api-key $(ZKSYNC_ETHERSCAN_API_KEY) --rpc-url $(ZKSYNC_SEPOLIA_RPC) --account deployer -vvvvv
+
 set-peer-on-both-using-script:
-	forge script script/SetPeers.s.sol:SetPeers --broadcast --account deployer -vvvvv
+	forge script script/SetPeers.s.sol:SetPeers --broadcast --account deployer -vvvvv --via-ir
 
 
 

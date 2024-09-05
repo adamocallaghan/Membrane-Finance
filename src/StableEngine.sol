@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {OApp, Origin, MessagingFee, MessagingReceipt} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+import {OAppOptionsType3} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OAppOptionsType3.sol";
 import {IStableCoin} from "./interfaces/IStableCoin.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IERC721} from "@openzeppelin/contracts/interfaces/IERC721.sol";
@@ -11,7 +12,7 @@ interface IChainlinkDataFeed {
     function latestAnswer() external returns (int256);
 }
 
-contract StableEngine is OApp, IERC721Receiver {
+contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
     // ====================
     // === STORAGE VARS ===
     // ====================
@@ -19,6 +20,8 @@ contract StableEngine is OApp, IERC721Receiver {
     string public data;
     uint256 public number;
     address public user;
+
+    uint256 public liqudationAmount;
 
     // Stablecoin vars
     address public stableCoinContract;
@@ -39,6 +42,9 @@ contract StableEngine is OApp, IERC721Receiver {
     uint256 public COLLATERALISATION_RATIO = 5e17; // aka 50%
     uint256 public MIN_HEALTH_FACTOR = 1e18; // aka 1.0
 
+    uint16 public constant SEND = 1;
+    uint16 public constant SEND_ABA = 2;
+
     enum ChainSelection {
         Base,
         Optimism,
@@ -57,6 +63,8 @@ contract StableEngine is OApp, IERC721Receiver {
     error ChainNotSpecified();
     error NoNftsCurrentlySupplied();
     error Error__NftIsNotAcceptedCollateral();
+    error InvalidMsgType();
+    error MaxCollateralisationRatioReached();
 
     // ==============
     // === EVENTS ===
@@ -72,6 +80,9 @@ contract StableEngine is OApp, IERC721Receiver {
     event OptimismSelected();
     event ArbitrumSelected();
     event Received();
+    // event MessageSent(string _message, uint32 _dstEid);
+    event AttemptedLzSendFromCheckBorrowerStatus();
+    event LiquidationStatusReceivedOnSourceChain(uint256 amount, uint8 choice);
 
     constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
 
@@ -142,7 +153,7 @@ contract StableEngine is OApp, IERC721Receiver {
     // === LZ SEND ===
     // ===============
 
-    function sendToMinter(uint32 _dstEid, uint256 _amount, address _recipient, bytes calldata _options)
+    function sendToMinter(uint32 _dstEid, uint256 _amount, address _recipient, uint8 _choice, bytes calldata _options)
         external
         payable
         returns (MessagingReceipt memory receipt)
@@ -157,12 +168,13 @@ contract StableEngine is OApp, IERC721Receiver {
 
         // check if acceptable amount
         if (_amount <= maxStablecoinCanBeMinted) {
-            bytes memory _payload = abi.encode(_amount, _recipient);
+            bytes memory _payload = abi.encode(_amount, _recipient, _choice);
             receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+            // update user balance
+            userAddressToNumberOfStablecoinsMinted[msg.sender] += _amount;
+        } else {
+            revert MaxCollateralisationRatioReached();
         }
-
-        // update user balance
-        userAddressToNumberOfStablecoinsMinted[msg.sender] += _amount;
     }
 
     // ================
@@ -183,17 +195,23 @@ contract StableEngine is OApp, IERC721Receiver {
     // ==================
 
     function _lzReceive(
-        Origin calldata, /*_origin*/
+        Origin calldata _origin,
         bytes32 _guid,
         bytes calldata payload,
         address, /*_executor*/
         bytes calldata /*_extraData*/
     ) internal override {
-        (uint256 amount, address recipient) = abi.decode(payload, (uint256, address));
+        (uint256 amount, address recipient, uint8 choice) = abi.decode(payload, (uint256, address, uint8));
         number = amount;
         user = recipient;
 
-        endpoint.sendCompose(stableCoinContract, _guid, 0, payload);
+        if (choice == 1) {
+            endpoint.sendCompose(stableCoinContract, _guid, 0, payload);
+        } else if (choice == 2) {
+            _checkBorrowerLiquidationStatus(recipient, _origin.srcEid);
+        } else if (choice == 3) {
+            emit LiquidationStatusReceivedOnSourceChain(amount, choice);
+        }
     }
 
     function callStableEngineContractAndMint(address _recipient, uint256 _numberOfCoins) internal {
@@ -230,8 +248,6 @@ contract StableEngine is OApp, IERC721Receiver {
         return healthFactor;
     }
 
-    function liquidate(address _borrower, uint256 _amountToRepay) external {}
-
     // ======================
     // === NFT PRICE FEED ===
     // ======================
@@ -241,6 +257,32 @@ contract StableEngine is OApp, IERC721Receiver {
         // uint256 nftPrice = uint256(nftPriceFeed.latestAnswer());
         // return nftPrice * 1e10; // bring it up as chainlink returns it with 8 decimals only
         return 25000e18;
+    }
+
+    // =============================
+    // === LIQUIDATION FUNCTIONS ===
+    // =============================
+
+    function sendLiquidationCheck(
+        uint32 _dstEid,
+        uint256 _amount,
+        address _recipient,
+        uint8 _choice,
+        bytes calldata _options
+    ) external payable returns (MessagingReceipt memory receipt) {
+        bytes memory _payload = abi.encode(_amount, _recipient, _choice);
+        receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
+    function _checkBorrowerLiquidationStatus(address _borrower, uint32 _dstEid) internal returns (uint256) {
+        // if user is liquidatable
+        if (_getBorrowerHealthFactor(_borrower) < 10) {
+            bytes memory _payload = abi.encode(userAddressToNumberOfStablecoinsMinted[_borrower], _borrower, 3);
+            bytes memory _options =
+                "0x000301001101000000000000000000000000000aae60010013030000000000000000000000000000000aae60";
+            _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+            emit AttemptedLzSendFromCheckBorrowerStatus();
+        }
     }
 
     // =========================
