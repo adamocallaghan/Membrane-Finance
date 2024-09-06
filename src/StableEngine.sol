@@ -132,7 +132,8 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
         // check that the requested tokenId is the one the user supplied initially
         if (msg.sender == nftCollectionTokenIdToSupplierAddress[_nftAddress][_tokenId]) {
             // check if a user has an outstanding loan (stablecoin minted) balance
-            if (userAddressToNumberOfStablecoinsMinted[msg.sender] == 0) {
+            uint256 healthFactorAfterWithdrawal = _simulateBorrowerHealthFactorAfterWithdrawal(msg.sender);
+            if (healthFactorAfterWithdrawal < MIN_HEALTH_FACTOR) {
                 // if both are ok, transfer the NFT to them
                 IERC721(_nftAddress).transferFrom(address(this), msg.sender, _tokenId);
 
@@ -153,12 +154,18 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
         public
         payable
     {
-        // take in the StableCoins
-        IStableCoin(stableCoinContract).transferFrom(msg.sender, address(this), _amount); // approval required first on frontend
+        if (_dstEid == lzDstEidOfThisChain) {
+            // take in the StableCoins
+            IStableCoin(stableCoinContract).transferFrom(msg.sender, address(this), _amount); // approval required first on frontend
+            userAddressToNumberOfStablecoinsMinted[_recipient] -= _amount; // update balance
+        } else {
+            // take in the StableCoins
+            IStableCoin(stableCoinContract).transferFrom(msg.sender, address(this), _amount); // approval required first on frontend
 
-        // _lzSend to dstEid to repay debt
-        bytes memory _payload = abi.encode(_amount, _recipient, 4); // choice 4 to repay debt on Base
-        _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+            // _lzSend to dstEid to repay debt
+            bytes memory _payload = abi.encode(_amount, _recipient, 4); // choice 4 to repay debt on Base
+            _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+        }
     }
 
     // ===============================
@@ -267,6 +274,19 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
 
         // calculate health factor
         uint256 healthFactor = (totalValueOfAllCollateral / borrowed) * COLLATERALISATION_RATIO;
+        return healthFactor;
+    }
+
+    function _simulateBorrowerHealthFactorAfterWithdrawal(address _borrower) internal view returns (uint256) {
+        // get borrower's borrowed tokens amount
+        uint256 borrowed = userAddressToNumberOfStablecoinsMinted[_borrower]; // e.g. 500e18
+        uint256 borrowedPlusSingleNftValueInUsd = nftPriceInUsd();
+
+        // get borower's collateral value
+        uint256 totalValueOfAllCollateral = _calculateTotalValueOfUserCollateral(_borrower); // e.g. 36000e18
+
+        // calculate health factor
+        uint256 healthFactor = (totalValueOfAllCollateral / borrowedPlusSingleNftValueInUsd) * COLLATERALISATION_RATIO;
         return healthFactor;
     }
 
