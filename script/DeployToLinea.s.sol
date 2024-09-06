@@ -19,6 +19,10 @@ contract DeployToLinea is Script {
         string memory LINEA_LZ_ENDPOINT = "LINEA_SEPOLIA_LZ_ENDPOINT";
         string memory DEPLOYER_PUBLIC_ADDRESS = "DEPLOYER_PUBLIC_ADDRESS";
 
+        // === LINEA ===
+        uint256 lineaLzEndIdUint = vm.envUint("LINEA_SEPOLIA_LZ_ENDPOINT_ID");
+        uint32 LINEA_SEPOLIA_LZ_ENDPOINT_ID = uint32(lineaLzEndIdUint);
+
         // ========================
         // === BASE DEPLOYMENTS ===
         // ========================
@@ -33,11 +37,11 @@ contract DeployToLinea is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine lineaOapp =
-            new StableEngine{salt: "yoyo"}(vm.envAddress(LINEA_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "pop"}(vm.envAddress(LINEA_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(lineaOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin lineaOft = new StableCoin{salt: "yoyo"}(
+        StableCoin lineaOft = new StableCoin{salt: "pop"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(LINEA_LZ_ENDPOINT),
@@ -47,7 +51,7 @@ contract DeployToLinea is Script {
         console2.log("OFT Address: ", address(lineaOft));
 
         // deploy NFTMock
-        NFTMock lineaNft = new NFTMock{salt: "yoyo"}();
+        NFTMock lineaNft = new NFTMock{salt: "pop"}();
         console2.log("NFT Address: ", address(lineaNft));
 
         // whitelist the NFT on StableEngine

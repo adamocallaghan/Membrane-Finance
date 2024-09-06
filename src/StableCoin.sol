@@ -39,6 +39,11 @@ contract StableCoin is OFT, ILayerZeroComposer {
         emit Mint(recipient, amount);
     }
 
+    function mint(address _recipient, uint256 _amount) external onlyStableEngine {
+        _mint(_recipient, _amount);
+        emit Mint(_recipient, _amount);
+    }
+
     modifier onlyStableEngine() {
         if (msg.sender != stableEngine) {
             revert Error__NotStableEngine();

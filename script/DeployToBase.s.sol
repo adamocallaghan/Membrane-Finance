@@ -17,14 +17,11 @@ contract DeployToBase is Script {
 
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         string memory BASE_LZ_ENDPOINT = "BASE_SEPOLIA_LZ_ENDPOINT";
-        // string memory OPTIMISM_LZ_ENDPOINT = "OPTIMISM_SEPOLIA_LZ_ENDPOINT";
-
-        // string memory opLzEndIdString = "OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID";
-        // uint256 opLzEndIdUint = vm.envUint("OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID");
-        // uint32 OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID = uint32(opLzEndIdUint);
-        // bytes32 OPTIMISM_SEPOLIA_OAPP_BYTES32 = "OPTIMISM_SEPOLIA_OAPP_BYTES32";
-
         string memory DEPLOYER_PUBLIC_ADDRESS = "DEPLOYER_PUBLIC_ADDRESS";
+
+        // === BASE ===
+        uint256 baseLzEndIdUint = vm.envUint("BASE_SEPOLIA_LZ_ENDPOINT_ID");
+        uint32 BASE_SEPOLIA_LZ_ENDPOINT_ID = uint32(baseLzEndIdUint);
 
         // ========================
         // === BASE DEPLOYMENTS ===
@@ -40,11 +37,11 @@ contract DeployToBase is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine baseOapp =
-            new StableEngine{salt: "yoyo"}(vm.envAddress(BASE_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "pop"}(vm.envAddress(BASE_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(baseOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin baseOft = new StableCoin{salt: "yoyo"}(
+        StableCoin baseOft = new StableCoin{salt: "pop"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(BASE_LZ_ENDPOINT),
@@ -54,7 +51,7 @@ contract DeployToBase is Script {
         console2.log("OFT Address: ", address(baseOft));
 
         // deploy NFTMock
-        NFTMock baseNft = new NFTMock{salt: "yoyo"}();
+        NFTMock baseNft = new NFTMock{salt: "pop"}();
         console2.log("NFT Address: ", address(baseNft));
 
         // whitelist the NFT on StableEngine

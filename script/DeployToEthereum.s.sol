@@ -19,6 +19,10 @@ contract DeployToEthereum is Script {
         string memory ETHEREUM_LZ_ENDPOINT = "ETHEREUM_SEPOLIA_LZ_ENDPOINT";
         string memory DEPLOYER_PUBLIC_ADDRESS = "DEPLOYER_PUBLIC_ADDRESS";
 
+        // === ETHEREUM ===
+        uint256 ethLzEndIdUint = vm.envUint("ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID");
+        uint32 ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID = uint32(ethLzEndIdUint);
+
         // ========================
         // === BASE DEPLOYMENTS ===
         // ========================
@@ -33,11 +37,11 @@ contract DeployToEthereum is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine ethOapp =
-            new StableEngine{salt: "yoyo"}(vm.envAddress(ETHEREUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "pop"}(vm.envAddress(ETHEREUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(ethOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin ethOft = new StableCoin{salt: "yoyo"}(
+        StableCoin ethOft = new StableCoin{salt: "pop"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(ETHEREUM_LZ_ENDPOINT),
@@ -47,7 +51,7 @@ contract DeployToEthereum is Script {
         console2.log("OFT Address: ", address(ethOft));
 
         // deploy NFTMock
-        NFTMock ethNft = new NFTMock{salt: "yoyo"}();
+        NFTMock ethNft = new NFTMock{salt: "pop"}();
         console2.log("NFT Address: ", address(ethNft));
 
         // whitelist the NFT on StableEngine

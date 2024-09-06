@@ -7,6 +7,7 @@ import {StableCoin} from "../src/StableCoin.sol";
 
 interface StableEngineOapp {
     function setPeer(uint32, bytes32) external;
+    function setDstEidOfHomeChain(uint32) external;
 }
 
 contract SetPeers is Script {
@@ -17,7 +18,7 @@ contract SetPeers is Script {
 
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         // Oapp Bytes32 format Address (Same address all chains)
-        bytes32 OAPP_BYTES32 = 0x00000000000000000000000057e56f6902c0273ef0694391998a860ea56CD7af;
+        bytes32 OAPP_BYTES32 = 0x000000000000000000000000AD9Fc4039BeC75d97cfd385a7ECdDd4BCe4B7854;
         // Oapp Address (aame address all chains)
         address OAPP_ADDRESS = vm.envAddress("OAPP_ADDRESS");
 
@@ -59,6 +60,8 @@ contract SetPeers is Script {
         StableEngineOapp(OAPP_ADDRESS).setPeer(ZKSYNC_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(LINEA_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
+        // Set DstEid of "Current" Home Chain for Logic Splitting Usage
+        StableEngineOapp(OAPP_ADDRESS).setDstEidOfHomeChain(BASE_SEPOLIA_LZ_ENDPOINT_ID);
 
         vm.stopBroadcast();
 
@@ -81,6 +84,8 @@ contract SetPeers is Script {
         StableEngineOapp(OAPP_ADDRESS).setPeer(ZKSYNC_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(LINEA_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
+        // Set DstEid of "Current" Home Chain for Logic Splitting Usage
+        StableEngineOapp(OAPP_ADDRESS).setDstEidOfHomeChain(OPTIMISM_SEPOLIA_LZ_ENDPOINT_ID);
 
         vm.stopBroadcast();
 
@@ -103,6 +108,8 @@ contract SetPeers is Script {
         StableEngineOapp(OAPP_ADDRESS).setPeer(ZKSYNC_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(LINEA_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
+        // Set DstEid of "Current" Home Chain for Logic Splitting Usage
+        StableEngineOapp(OAPP_ADDRESS).setDstEidOfHomeChain(ARBITRUM_SEPOLIA_LZ_ENDPOINT_ID);
 
         vm.stopBroadcast();
 
@@ -147,6 +154,8 @@ contract SetPeers is Script {
         StableEngineOapp(OAPP_ADDRESS).setPeer(ARBITRUM_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(ZKSYNC_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
         StableEngineOapp(OAPP_ADDRESS).setPeer(ETHEREUM_SEPOLIA_LZ_ENDPOINT_ID, OAPP_BYTES32);
+        // Set DstEid of "Current" Home Chain for Logic Splitting Usage
+        StableEngineOapp(OAPP_ADDRESS).setDstEidOfHomeChain(LINEA_SEPOLIA_LZ_ENDPOINT_ID);
 
         vm.stopBroadcast();
 

@@ -59,10 +59,9 @@ deploy-contracts--to-linea-and-set-addresses-for-collateral-and-stablecoin:
 # deploy-contracts--to-zksync-and-set-addresses-for-collateral-and-stablecoin:
 # 	forge script script/DeployToZkSync.s.sol:DeployToZkSync --broadcast --verify --etherscan-api-key $(ZKSYNC_ETHERSCAN_API_KEY) --rpc-url $(ZKSYNC_SEPOLIA_RPC) --account deployer -vvvvv
 
+# *** NOTE: --via-ir IS ON BECAUSE OF A 'STACK TOO DEEP' ERROR USING THE SET PEERS SCRIPT AFTER ADDING ARB & LINEA ***
 set-peer-on-both-using-script:
 	forge script script/SetPeers.s.sol:SetPeers --broadcast --account deployer -vvvvv --via-ir
-
-
 
 # read max mintable
 read-max-mintable-for-user:

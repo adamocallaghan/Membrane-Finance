@@ -23,6 +23,10 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
 
     uint256 public liqudationAmount;
 
+    // _dstEid of chain this contract is on
+    // to detect 'mintToSender' for *THIS* chain and not a remote chain
+    uint32 public lzDstEidOfThisChain;
+
     // Stablecoin vars
     address public stableCoinContract;
 
@@ -145,6 +149,18 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
         }
     }
 
+    function repay(uint32 _dstEid, uint256 _amount, address _recipient, uint8 _choice, bytes calldata _options)
+        public
+        payable
+    {
+        // take in the StableCoins
+        IStableCoin(stableCoinContract).transferFrom(msg.sender, address(this), _amount); // approval required first on frontend
+
+        // _lzSend to dstEid to repay debt
+        bytes memory _payload = abi.encode(_amount, _recipient, 4); // choice 4 to repay debt on Base
+        _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+    }
+
     // ===============================
     // === LAYERZERO FUNCTIONALITY ===
     // ===============================
@@ -158,22 +174,26 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
         payable
         returns (MessagingReceipt memory receipt)
     {
-        // has user supplied an nft as collateral
-        if (numberOfNftsUserHasSupplied[msg.sender] == 0) {
-            revert NoNftsCurrentlySupplied();
-        }
-
-        // calculate max amount user can mint
-        uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser(msg.sender);
-
-        // check if acceptable amount
-        if (_amount <= maxStablecoinCanBeMinted) {
-            bytes memory _payload = abi.encode(_amount, _recipient, _choice);
-            receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
-            // update user balance
-            userAddressToNumberOfStablecoinsMinted[msg.sender] += _amount;
+        if (_dstEid == lzDstEidOfThisChain) {
+            IStableCoin(stableCoinContract).mint(_recipient, _amount);
         } else {
-            revert MaxCollateralisationRatioReached();
+            // has user supplied an nft as collateral
+            if (numberOfNftsUserHasSupplied[msg.sender] == 0) {
+                revert NoNftsCurrentlySupplied();
+            }
+
+            // calculate max amount user can mint
+            uint256 maxStablecoinCanBeMinted = _calculateMaxMintableByUser(msg.sender);
+
+            // check if acceptable amount
+            if (_amount <= maxStablecoinCanBeMinted) {
+                bytes memory _payload = abi.encode(_amount, _recipient, _choice);
+                receipt = _lzSend(_dstEid, _payload, _options, MessagingFee(msg.value, 0), payable(msg.sender));
+                // update user balance
+                userAddressToNumberOfStablecoinsMinted[msg.sender] += _amount;
+            } else {
+                revert MaxCollateralisationRatioReached();
+            }
         }
     }
 
@@ -211,6 +231,8 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
             _checkBorrowerLiquidationStatus(recipient, _origin.srcEid);
         } else if (choice == 3) {
             emit LiquidationStatusReceivedOnSourceChain(amount, choice);
+        } else if (choice == 4) {
+            userAddressToNumberOfStablecoinsMinted[recipient] -= amount;
         }
     }
 
@@ -296,6 +318,10 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
     function setNftAsCollateral(address _nftAddress, address _nftOracle, uint256 _index) external onlyOwner {
         whitelistedNFTs.push(_nftAddress);
         nftOracles.push(_nftOracle);
+    }
+
+    function setDstEidOfHomeChain(uint32 _lzDstEidOfThisChain) external onlyOwner {
+        lzDstEidOfThisChain = _lzDstEidOfThisChain;
     }
 
     function getUserTokenIdsForAnNftCollection(address _holder, address nftCollection)
