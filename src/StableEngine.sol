@@ -131,9 +131,9 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
     function withdraw(address _nftAddress, uint256 _tokenId) public {
         // check that the requested tokenId is the one the user supplied initially
         if (msg.sender == nftCollectionTokenIdToSupplierAddress[_nftAddress][_tokenId]) {
-            // check if a user has an outstanding loan (stablecoin minted) balance
+            // check if health factor will be broken if user withdraws an NFT
             uint256 healthFactorAfterWithdrawal = _simulateBorrowerHealthFactorAfterWithdrawal(msg.sender);
-            if (healthFactorAfterWithdrawal < MIN_HEALTH_FACTOR) {
+            if (healthFactorAfterWithdrawal > MIN_HEALTH_FACTOR) {
                 // if both are ok, transfer the NFT to them
                 IERC721(_nftAddress).transferFrom(address(this), msg.sender, _tokenId);
 
