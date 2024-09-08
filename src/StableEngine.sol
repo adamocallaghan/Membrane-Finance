@@ -42,6 +42,8 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
     mapping(address user => mapping(address nftCollection => uint256[] tokenIds)) public
         userAddressToNftCollectionTokenIds;
 
+    mapping(address liquidatableUser => uint256 liquidationAmount) public liquidatableUsersToLiquidationAmounts;
+
     // CR and Health Factor vars
     uint256 public COLLATERALISATION_RATIO = 5e17; // aka 50%
     uint256 public MIN_HEALTH_FACTOR = 1e18; // aka 1.0
@@ -87,6 +89,10 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
     // event MessageSent(string _message, uint32 _dstEid);
     event AttemptedLzSendFromCheckBorrowerStatus();
     event LiquidationStatusReceivedOnSourceChain(uint256 amount, uint8 choice);
+
+    event MessageSent(uint32 dstEid);
+    event ReturnMessageSent(uint32 dstEid);
+    event MessageReceived(string message, uint32 senderEid, bytes32 sender);
 
     constructor(address _endpoint, address _owner) OApp(_endpoint, _owner) Ownable(_owner) {}
 
@@ -240,6 +246,49 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
             emit LiquidationStatusReceivedOnSourceChain(amount, choice);
         } else if (choice == 4) {
             userAddressToNumberOfStablecoinsMinted[recipient] -= amount;
+        } else if (choice == 5) {
+            (
+                uint256 amount,
+                address recipient,
+                uint8 choice,
+                uint16 _msgType,
+                uint256 extraOptionsStart,
+                uint256 extraOptionsLength
+            ) = decodeMessage(payload);
+            user = recipient;
+            number = amount;
+
+            if (_msgType == SEND_ABA) {
+                // string memory _newMessage = "Chain B says goodbye!";
+
+                uint256 queriedUserOutstandingBalance = 1234;
+
+                // uint256 borrowerHealthFactor = _getBorrowerHealthFactor(recipient);
+                // // using high health factor so we can liquidate a user in demo
+                // if (borrowerHealthFactor < 3000000000000000000) {
+                //     queriedUserOutstandingBalance = userAddressToNumberOfStablecoinsMinted[recipient];
+                // }
+
+                bytes memory _options = combineOptions(
+                    _origin.srcEid, SEND, payload[extraOptionsStart:extraOptionsStart + extraOptionsLength]
+                );
+
+                _lzSend(
+                    _origin.srcEid,
+                    abi.encode(queriedUserOutstandingBalance, recipient, 6, SEND),
+                    _options,
+                    MessagingFee(msg.value, 0),
+                    payable(address(this))
+                );
+
+                emit ReturnMessageSent(_origin.srcEid);
+            }
+
+            emit MessageReceived(data, _origin.srcEid, _origin.sender);
+        } else if (choice == 6) {
+            liquidatableUsersToLiquidationAmounts[recipient] = amount;
+        } else if (choice == 7) {
+            // _releaseNftToLiquidator();
         }
     }
 
@@ -327,6 +376,8 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
         }
     }
 
+    function _releaseNftToLiquidator() internal {}
+
     // =========================
     // === SETTERS & GETTERS ===
     // =========================
@@ -367,5 +418,79 @@ contract StableEngine is OApp, OAppOptionsType3, IERC721Receiver {
 
     function onERC721Received(address, address, uint256, bytes memory) public virtual override returns (bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    // ====================================
+    // === lZ ENCODE & DECODE FOR A-B-A ===
+    // ====================================
+
+    function encodeMessage(
+        uint256 _amount,
+        address _recipient,
+        uint8 _choice,
+        uint16 _msgType,
+        bytes memory _extraReturnOptions
+    ) public pure returns (bytes memory) {
+        // Get the length of _extraReturnOptions
+        uint256 extraOptionsLength = _extraReturnOptions.length;
+
+        // Encode the entire message, prepend and append the length of extraReturnOptions
+        return abi.encode(
+            _amount, _recipient, _choice, _msgType, extraOptionsLength, _extraReturnOptions, extraOptionsLength
+        );
+    }
+
+    function decodeMessage(bytes calldata encodedMessage)
+        public
+        pure
+        returns (
+            uint256 _amount,
+            address _recipient,
+            uint8 _choice,
+            uint16 msgType,
+            uint256 extraOptionsStart,
+            uint256 extraOptionsLength
+        )
+    {
+        extraOptionsStart = 256; // Starting offset after _message, _msgType, and extraOptionsLength
+        // string memory _message;
+        uint16 _msgType;
+
+        // Decode the first part of the message
+        (_amount, _recipient, _choice, _msgType, extraOptionsLength) =
+            abi.decode(encodedMessage, (uint256, address, uint8, uint16, uint256));
+
+        return (_amount, _recipient, _choice, _msgType, extraOptionsStart, extraOptionsLength);
+    }
+
+    function sendABA(
+        uint32 _dstEid,
+        uint16 _msgType,
+        uint256 _amount,
+        address _recipient,
+        uint8 _choice,
+        bytes calldata _extraSendOptions, // gas settings for A -> B
+        bytes calldata _extraReturnOptions // gas settings for B -> A
+    ) external payable {
+        // Encodes the message before invoking _lzSend.
+        // require(bytes(_message).length <= 32, "String exceeds 32 bytes");
+
+        if (_msgType != SEND && _msgType != SEND_ABA) {
+            revert InvalidMsgType();
+        }
+
+        bytes memory options = combineOptions(_dstEid, _msgType, _extraSendOptions);
+
+        _lzSend(
+            _dstEid,
+            encodeMessage(_amount, _recipient, _choice, _msgType, _extraReturnOptions),
+            options,
+            // Fee in native gas and ZRO token.
+            MessagingFee(msg.value, 0),
+            // Refund address in case of failed source message.
+            payable(msg.sender)
+        );
+
+        emit MessageSent(_dstEid);
     }
 }

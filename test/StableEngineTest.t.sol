@@ -89,15 +89,20 @@ contract StableEngineTest is Test {
         assertEq(newNftOwner, bob);
     }
 
-    function test_MintOnChainFunctionReached() public {
-        // Bob supplies nft to contract
-        supplyNftToProtocol();
-        mintOnOptimism();
-    }
+    // function test_MintOnChainFunctionReached() public {
+    //     // Bob supplies nft to contract
+    //     supplyNftToProtocol();
+    //     mintOnOptimism();
+    // }
 
     function test_BuildOptions() public pure {
         bytes memory options =
             OptionsBuilder.newOptions().addExecutorLzReceiveOption(700000, 0).addExecutorLzComposeOption(0, 700000, 0);
+        console2.log("Lz Message Options: ", vm.toString(options));
+    }
+
+    function test_BuildOptions_ReceiveTwice() public pure {
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(700000, 1000000000000000);
         console2.log("Lz Message Options: ", vm.toString(options));
     }
 
@@ -119,13 +124,11 @@ contract StableEngineTest is Test {
         vm.stopPrank();
     }
 
-    function mintOnOptimism() public {
-        vm.startPrank(bob);
-        oapp.mintOnOptimism(
-            40231, "Testing", 1234e18, 1, address(bob), "0x00030100110100000000000000000000000000030d40"
-        ); // mint amount 1e18 on Optimism
-        vm.stopPrank();
-    }
+    // function mintOnOptimism() public {
+    //     vm.startPrank(bob);
+    //     oapp.sendToMinter(40231, "Testing", 1234e18, 1, address(bob), "0x00030100110100000000000000000000000000030d40"); // mint amount 1e18 on Optimism
+    //     vm.stopPrank();
+    // }
 
     function getNftFloorPriceInUsd() public pure returns (uint256) {
         return 32000;

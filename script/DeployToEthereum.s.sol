@@ -37,11 +37,11 @@ contract DeployToEthereum is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine ethOapp =
-            new StableEngine{salt: "pop"}(vm.envAddress(ETHEREUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "red"}(vm.envAddress(ETHEREUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(ethOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin ethOft = new StableCoin{salt: "pop"}(
+        StableCoin ethOft = new StableCoin{salt: "red"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(ETHEREUM_LZ_ENDPOINT),
@@ -51,7 +51,7 @@ contract DeployToEthereum is Script {
         console2.log("OFT Address: ", address(ethOft));
 
         // deploy NFTMock
-        NFTMock ethNft = new NFTMock{salt: "pop"}();
+        NFTMock ethNft = new NFTMock{salt: "red"}();
         console2.log("NFT Address: ", address(ethNft));
 
         // whitelist the NFT on StableEngine

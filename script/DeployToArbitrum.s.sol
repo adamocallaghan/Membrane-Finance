@@ -37,11 +37,11 @@ contract DeployToArbitrum is Script {
 
         // deploy StableEngine OAPP contract
         StableEngine arbOapp =
-            new StableEngine{salt: "pop"}(vm.envAddress(ARBITRUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
+            new StableEngine{salt: "red"}(vm.envAddress(ARBITRUM_LZ_ENDPOINT), vm.envAddress(DEPLOYER_PUBLIC_ADDRESS));
         console2.log("StableEngine Address: ", address(arbOapp));
 
         // deploy StableCoin OFT contract
-        StableCoin arbOft = new StableCoin{salt: "pop"}(
+        StableCoin arbOft = new StableCoin{salt: "red"}(
             "Membrane USD",
             "memUSD",
             vm.envAddress(ARBITRUM_LZ_ENDPOINT),
@@ -51,7 +51,7 @@ contract DeployToArbitrum is Script {
         console2.log("OFT Address: ", address(arbOft));
 
         // deploy NFTMock
-        NFTMock arbNft = new NFTMock{salt: "pop"}();
+        NFTMock arbNft = new NFTMock{salt: "red"}();
         console2.log("NFT Address: ", address(arbNft));
 
         // whitelist the NFT on StableEngine
